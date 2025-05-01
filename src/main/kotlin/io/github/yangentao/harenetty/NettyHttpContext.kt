@@ -5,14 +5,13 @@ import io.github.yangentao.hare.HttpApp
 import io.github.yangentao.hare.HttpContext
 import io.github.yangentao.hare.HttpResult
 import io.github.yangentao.hare.utils.UriPath
-import io.github.yangentao.hare.utils.appendAll
-import io.github.yangentao.hare.utils.appendValue
 import io.github.yangentao.hare.utils.encodedURL
 import io.github.yangentao.hare.utils.quoted
 import io.github.yangentao.hare.utils.uuidString
-import io.github.yangentao.harenetty.bytesCopy
 import io.github.yangentao.httpbasic.*
 import io.github.yangentao.types.MB
+import io.github.yangentao.types.appendAll
+import io.github.yangentao.types.appendValue
 import io.github.yangentao.types.invokeInstance
 import io.github.yangentao.types.proxyInterface
 import io.netty.buffer.Unpooled
