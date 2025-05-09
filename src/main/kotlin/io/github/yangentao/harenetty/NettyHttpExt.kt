@@ -52,7 +52,11 @@ internal fun options(ctx: ChannelHandlerContext, request: FullHttpRequest, optio
 }
 
 fun ChannelHandlerContext.error404NotFound() {
-    this.writeAndFlush(DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND))
+    val r = DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+    r.setContentType("text/plain; charset=utf-8")
+    r.content().writeCharSequence("404 NOT FOUND", Charsets.UTF_8)
+    r.setContentLengthByBuf()
+    this.writeAndFlush(r)
 }
 
 fun ChannelHandlerContext.error403Forbidden() {

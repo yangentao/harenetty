@@ -35,6 +35,7 @@ class HttpHandler(val app: HttpApp) : io.netty.channel.SimpleChannelInboundHandl
             return
         }
         val p: TargetRouterAction? = app.findRouter(requestUri)
+        logd("FindRouter:", p?.routePath, p?.action)
         if (p == null) {
             ctx.error404NotFound()
             return

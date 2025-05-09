@@ -132,6 +132,9 @@ class NettyHttpContext(
 
     override fun sendError(status: HttpStatus) {
         response.status = HttpResponseStatus.valueOf(status.code, status.reason)
+        response.setContentType("text/plain; charset=utf-8")
+        response.content().writeCharSequence("${status.code} ${status.reason}", Charsets.UTF_8)
+        response.setContentLengthByBuf()
         channelContext.writeAndFlush(response)
     }
 
