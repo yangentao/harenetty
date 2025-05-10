@@ -2,7 +2,7 @@
 
 package io.github.yangentao.harenetty
 
-import io.github.yangentao.hare.log.logd
+import io.github.yangentao.xlog.logd
 
 class GroupNettyServer(val services: List<BaseNettyServer>) {
 
