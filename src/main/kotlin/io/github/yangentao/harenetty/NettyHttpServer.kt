@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler
 import io.netty.handler.stream.ChunkedWriteHandler
 
-class HttpNettyServer(
+class NettyHttpServer(
     val app: HttpApp, port: Int, bossCount: Int = 6,
     workerCount: Int = 12, val maxContentSize: Int = 100 * MB
 ) : BaseNettyServer(port, bossCount = bossCount, workerCount = workerCount) {
