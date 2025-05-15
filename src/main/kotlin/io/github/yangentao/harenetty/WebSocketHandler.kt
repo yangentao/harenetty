@@ -5,41 +5,21 @@ package io.github.yangentao.harenetty
 import io.github.yangentao.hare.utils.UriPath
 import io.github.yangentao.types.PatternText
 import io.github.yangentao.types.createInstanceArgOne
-import io.github.yangentao.types.createInstanceX
 import io.github.yangentao.types.invokeMap
 import io.github.yangentao.xlog.logd
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.codec.http.HttpHeaders
 import io.netty.handler.codec.http.QueryStringDecoder
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame
+import io.netty.handler.codec.http.websocketx.PongWebSocketFrame
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame
+import io.netty.handler.codec.http.websocketx.WebSocketFrame
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler.HandshakeComplete
-import jdk.internal.joptsimple.internal.Messages.message
 import kotlin.reflect.KClass
-import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.primaryConstructor
 
 //
-abstract class WebSocketEndpoint(val context: ChannelHandlerContext) {
-    var ident: String? = null
-
-    open fun onOpen(uri: String) {
-        logd("onOpen: $uri,  ident: $ident  ")
-    }
-
-    open fun onMessage(msg: String) {
-        logd("onMessage: ident: ", ident, " msg: ", msg, " uri: ")
-        context.channel().writeAndFlush("echo: $msg".websocketText)
-    }
-
-    open fun onClose() {
-    }
-
-    open fun onError() {
-    }
-
-}
 
 private var ChannelHandlerContext.websocketEndpoint: WebSocketEndpoint? by ChannelProperties
 private var ChannelHandlerContext.websocketArguments: Map<String, String>? by ChannelProperties
@@ -59,7 +39,7 @@ class DefaultWebSocketService() {
 
 }
 
-class WebSocketHandler(val uri: String, val endpointMap: Map<String, KClass<out WebSocketEndpoint>>) : SimpleChannelInboundHandler<TextWebSocketFrame>() {
+class WebSocketHandler(val uri: String, val endpointMap: Map<String, KClass<out WebSocketEndpoint>>) : SimpleChannelInboundHandler<WebSocketFrame>() {
 
     private fun onOpen(context: ChannelHandlerContext, requestUri: String, headers: HttpHeaders) {
         val decoder = QueryStringDecoder(requestUri)
@@ -68,25 +48,34 @@ class WebSocketHandler(val uri: String, val endpointMap: Map<String, KClass<out 
         if (path == null) {
             return
         }
+
         var argMap: Map<String, String>? = null
         lateinit var instClass: KClass<out WebSocketEndpoint>
-        for (e in endpointMap.entries) {
-            argMap = PatternText(e.key).tryMatchEntire(path)
-            if (argMap != null) {
-                instClass = e.value
-                break
+        if (path.isEmpty()) {
+            val cls = endpointMap[path]
+            if (cls == null) {
+                context.close()
+                return
+            }
+            instClass = cls
+        } else {
+            for (e in endpointMap.entries) {
+                argMap = PatternText(e.key).tryMatchEntire(path)
+                if (argMap != null) {
+                    instClass = e.value
+                    break
+                }
             }
         }
-        if (argMap == null) {
-            context.close()
-            return
-        }
+
         val map = LinkedHashMap<String, String>()
         for (e in decoder.parameters()) {
             map[e.key] = e.value.first()
         }
-        for (e in argMap) {
-            map[e.key] = e.value
+        if (argMap != null) {
+            for (e in argMap) {
+                map[e.key] = e.value
+            }
         }
         if (!map.containsKey("uri")) {
             map["uri"] = path
@@ -97,26 +86,16 @@ class WebSocketHandler(val uri: String, val endpointMap: Map<String, KClass<out 
         val inst: WebSocketEndpoint = instClass.createInstanceArgOne(context)!! as WebSocketEndpoint;
         context.websocketEndpoint = inst
         context.websocketArguments = map
-        inst.onOpen(requestUri)
+        inst.onOpen(requestUri, map)
 //        context.invokeWebSocketEndpoint("onOpen", map, typeList = listOf(context, this, headers))
     }
 
-    private fun onClose(context: ChannelHandlerContext) {
-        context.invokeWebSocketEndpoint("onClose", emptyMap(), typeList = listOf(context, this))
-        context.websocketEndpoint = null
-        context.websocketArguments = null
-    }
-
-    private fun onMessage(context: ChannelHandlerContext, message: String) {
-        context.websocketEndpoint?.onMessage(message)
-    }
-
-    private fun onError(context: ChannelHandlerContext, cause: Throwable) {
-        context.websocketEndpoint?.onError()
-    }
-
-    override fun channelRead0(ctx: ChannelHandlerContext, msg: TextWebSocketFrame) {
-        onMessage(ctx, msg.text())
+    override fun channelRead0(ctx: ChannelHandlerContext, msg: WebSocketFrame) {
+        when (msg) {
+            is TextWebSocketFrame -> ctx.websocketEndpoint?.onMessage(msg.text())
+            is BinaryWebSocketFrame -> ctx.websocketEndpoint?.onBinary(msg.content().bytesCopy)
+            is PongWebSocketFrame -> ctx.websocketEndpoint?.onPong(msg.content().bytesCopy)
+        }
     }
 
     override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
@@ -128,13 +107,15 @@ class WebSocketHandler(val uri: String, val endpointMap: Map<String, KClass<out 
     }
 
     override fun channelInactive(ctx: ChannelHandlerContext) {
-        onClose(ctx)
+        ctx.invokeWebSocketEndpoint("onClose", emptyMap(), typeList = listOf(ctx, this))
+        ctx.websocketEndpoint = null
+        ctx.websocketArguments = null
         super.channelInactive(ctx)
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         logd(cause)
-        onError(ctx, cause)
+        ctx.websocketEndpoint?.onError(cause)
         ctx.close()
     }
 }

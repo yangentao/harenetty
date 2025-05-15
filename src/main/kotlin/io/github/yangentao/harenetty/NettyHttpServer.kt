@@ -7,6 +7,7 @@ import io.github.yangentao.types.MB
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.HttpObjectAggregator
 import io.netty.handler.codec.http.HttpServerCodec
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConfig
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler
 import io.netty.handler.stream.ChunkedWriteHandler
 import kotlin.reflect.KClass
@@ -17,6 +18,10 @@ class NettyHttpServer(
 ) : BaseNettyServer(port, bossCount = bossCount, workerCount = workerCount) {
 
     private val httpHandler = HttpHandler(app)
+
+    init {
+
+    }
 
     override fun onStart() {
     }
@@ -34,7 +39,14 @@ class NettyHttpServer(
         ch.addLast(HttpObjectAggregator(maxContentSize, true))
         ch.addLast(ChunkedWriteHandler())
         for ((uri, paths) in app.webSockets) {
-            ch.addLast(WebSocketServerProtocolHandler(uri, true))
+            val wc = WebSocketServerProtocolConfig.newBuilder()
+                .websocketPath(uri)
+                .subprotocols(null)
+                .checkStartsWith(true)
+                .handshakeTimeoutMillis(10_000)
+                .dropPongFrames(false)
+                .build()
+            ch.addLast(WebSocketServerProtocolHandler(wc))
             ch.addLast(WebSocketHandler(uri, paths as Map<String, KClass<out WebSocketEndpoint>>))
         }
         ch.addLast(httpHandler)
