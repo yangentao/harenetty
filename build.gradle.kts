@@ -16,7 +16,7 @@ plugins {
 
 group = "io.github.yangentao"
 
-version = "1.1.0"
+version = "1.1.2"
 val artifactName = "harenetty"
 val githubLib = "harenetty"
 val descLib = "Java/Kotlin web, Netty."
@@ -34,7 +34,7 @@ dependencies {
     implementation(kotlin("stdlib"))
 
     api("io.netty:netty-all:4.1.119.Final")
-    api("io.github.yangentao:hare:[1.1.0,)")
+    api("io.github.yangentao:hare:[1.1.2,)")
 }
 
 tasks.test {
