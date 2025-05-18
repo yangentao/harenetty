@@ -22,6 +22,7 @@ class NettyHttpServer(
     }
 
     override fun afterStart() {
+
     }
 
     override fun onStop() {

@@ -1,5 +1,6 @@
 package io.github.yangentao.harenetty
 
+import io.github.yangentao.xlog.logd
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelInitializer
@@ -11,7 +12,7 @@ import kotlin.jvm.java
 abstract class BaseNettyServer(val port: Int, val bossCount: Int = 8, val workerCount: Int = 12) {
     private var boss: NioEventLoopGroup? = null
     private var worker: NioEventLoopGroup? = null
-    private var channelFuture: ChannelFuture? = null
+    protected var channelFuture: ChannelFuture? = null
 
     val running: Boolean get() = boss != null
 
@@ -40,6 +41,7 @@ abstract class BaseNettyServer(val port: Int, val bossCount: Int = 8, val worker
             boss = bossGroup
             worker = workerGroup
             channelFuture = fu
+            logd("listen on: ", fu.channel().localAddress())
             afterStart()
         } catch (ex: Exception) {
             ex.printStackTrace()
