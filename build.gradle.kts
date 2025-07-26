@@ -7,7 +7,7 @@ buildscript {
     }
 }
 plugins {
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.2.0"
     signing
     id("maven-publish")
     id("org.jetbrains.dokka") version "2.0.0"
@@ -16,7 +16,7 @@ plugins {
 
 group = "io.github.yangentao"
 
-version = "1.1.5"
+version = "2.0.0"
 val artifactName = "harenetty"
 val githubLib = "harenetty"
 val descLib = "Java/Kotlin web, Netty."
@@ -34,7 +34,7 @@ dependencies {
     implementation(kotlin("stdlib"))
 
     api("io.netty:netty-all:4.1.119.Final")
-    api("io.github.yangentao:hare:[1.1.5,)")
+    api("io.github.yangentao:hare:[2.0.0,)")
 }
 
 tasks.test {
