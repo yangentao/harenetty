@@ -22,10 +22,10 @@ internal typealias WebSocketMap = LinkedHashMap<String, LinkedHashMap<String, KC
 
 internal val HttpApp.websocketMap: WebSocketMap
     get() {
-        var map: WebSocketMap? = this.attrStore.getAttr("websocketMap")
+        var map: WebSocketMap? = this.attrStore.get("websocketMap")
         if (map != null) return map
         map = WebSocketMap()
-        this.attrStore.setAttr("websocketMap", map)
+        this.attrStore.set("websocketMap", map)
         return map
     }
 
