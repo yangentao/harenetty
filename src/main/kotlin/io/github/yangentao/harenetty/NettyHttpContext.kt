@@ -9,11 +9,7 @@ import io.github.yangentao.hare.utils.encodedURL
 import io.github.yangentao.hare.utils.quoted
 import io.github.yangentao.hare.utils.uuidString
 import io.github.yangentao.httpbasic.*
-import io.github.yangentao.types.MB
-import io.github.yangentao.types.appendAll
-import io.github.yangentao.types.appendValue
-import io.github.yangentao.types.invokeInstance
-import io.github.yangentao.types.proxyInterface
+import io.github.yangentao.types.*
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelProgressiveFuture
@@ -28,8 +24,6 @@ import java.io.RandomAccessFile
 import java.lang.reflect.Method
 import java.nio.file.Files
 import java.util.*
-import kotlin.collections.first
-import kotlin.collections.iterator
 
 //TODO 处理action直接返回错误码, 比如 404
 class NettyHttpContext(
@@ -63,10 +57,6 @@ class NettyHttpContext(
     override val method: String
         get() = request.method().name()
 
-    override fun requestHeader(name: String): String? {
-        return request.getHeader(name)
-    }
-
     override fun responseHeader(name: String, value: Any) {
         response.setHeader(name, value)
     }
@@ -85,9 +75,12 @@ class NettyHttpContext(
         }
 
     private fun parseParams() {
+        for (e in request.headers().entries()) {
+            this.requestHeaders[e.key] = e.value ?: continue;
+        }
         val q: QueryStringDecoder = queryDecoder
         for (e in q.parameters()) {
-            this.paramMap.appendAll(e.key.substringBefore('['), e.value)
+            this.requestParameters.appendAll(e.key.substringBefore('['), e.value)
         }
 
         if (request.method() == HttpMethod.POST) {
@@ -96,7 +89,7 @@ class NettyHttpContext(
             val httpDataList: List<InterfaceHttpData> = decoder.bodyHttpDatas
             for (item in httpDataList) {
                 if (item is Attribute) {
-                    this.paramMap.appendValue(item.name, item.value)
+                    this.requestParameters.appendValue(item.name, item.value)
                 } else if (item is FileUpload) {
                     val file: File = Files.createTempFile(null, null).toFile()
                     if (item.isInMemory) {
